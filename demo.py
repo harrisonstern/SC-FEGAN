@@ -3,7 +3,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
-from ui.ui import Ui_Form
+from ui.ui import Ui_MainWindow
 from ui.mouse_event import GraphicsScene
 import cv2
 import numpy as np
@@ -12,13 +12,14 @@ from model import Model
 import os
 import time
 
-class Ex(QWidget, Ui_Form):
+class Ex(QMainWindow, Ui_MainWindow):
     def __init__(self, model, config):
         super().__init__()
         self.setupUi(self)
         self.show()
         self.model = model
         self.config = config
+
         self.model.load_demo_graph(config)
 
         self.output_img = None
@@ -30,17 +31,17 @@ class Ex(QWidget, Ui_Form):
 
         self.modes = [0,0,0]
         self.mouse_clicked = False
-        self.scene = GraphicsScene(self.modes)
+        self.scene = GraphicsScene(self.modes, self.maskSizeSlider, self.sketchSizeSlider, self.paintSizeSlider)
         self.graphicsView.setScene(self.scene)
         self.graphicsView.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.result_scene = QGraphicsScene()
         self.graphicsView_2.setScene(self.result_scene)
         self.graphicsView_2.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.graphicsView_2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.graphicsView_2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.graphicsView_2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.graphicsView_2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.dlg = QColorDialog(self.graphicsView)
         self.color = None
@@ -64,7 +65,8 @@ class Ex(QWidget, Ui_Form):
             # redbrush = QBrush(Qt.red)
             # blackpen = QPen(Qt.black)
             # blackpen.setWidth(5)
-            self.image = image.scaled(self.graphicsView.size(), Qt.IgnoreAspectRatio)
+            self.image = image
+            #self.image = image.scaled(self.graphicsView.size(), Qt.IgnoreAspectRatio)
             mat_img = cv2.resize(mat_img, (512, 512), interpolation=cv2.INTER_CUBIC)
             mat_img = mat_img/127.5 - 1
             self.mat_img = np.expand_dims(mat_img,axis=0)
@@ -77,12 +79,15 @@ class Ex(QWidget, Ui_Form):
             self.result_scene.addPixmap(self.image)
 
     def mask_mode(self):
+        self.stackedWidget.setCurrentIndex(1)
         self.mode_select(0)
 
     def sketch_mode(self):
+        self.stackedWidget.setCurrentIndex(2)
         self.mode_select(1)
 
     def stroke_mode(self):
+        self.stackedWidget.setCurrentIndex(3)
         if not self.color:
             self.color_change_mode()
         self.scene.get_stk_color(self.color)
@@ -91,7 +96,7 @@ class Ex(QWidget, Ui_Form):
     def color_change_mode(self):
         self.dlg.exec_()
         self.color = self.dlg.currentColor().name()
-        self.pushButton_4.setStyleSheet("background-color: %s;" % self.color)
+        self.colorSelectButton.setStyleSheet("background-color: %s;" % self.color)
         self.scene.get_stk_color(self.color)
 
     def complete(self):
@@ -147,7 +152,7 @@ class Ex(QWidget, Ui_Form):
         if len(pts)>0:
             mask = np.zeros((512,512,3))
             for pt in pts:
-                cv2.line(mask,pt['prev'],pt['curr'],(255,255,255),12)
+                cv2.line(mask,pt[0]['prev'],pt[0]['curr'],(255,255,255),pt[1])
             mask = np.asarray(mask[:,:,0]/255,dtype=np.uint8)
             mask = np.expand_dims(mask,axis=2)
             mask = np.expand_dims(mask,axis=0)
@@ -163,7 +168,7 @@ class Ex(QWidget, Ui_Form):
             sketch = np.zeros((512,512,3))
             # sketch = 255*sketch
             for pt in pts:
-                cv2.line(sketch,pt['prev'],pt['curr'],(255,255,255),1)
+                cv2.line(sketch,pt[0]['prev'],pt[0]['curr'],(255,255,255),pt[1])
             sketch = np.asarray(sketch[:,:,0]/255,dtype=np.uint8)
             sketch = np.expand_dims(sketch,axis=2)
             sketch = np.expand_dims(sketch,axis=0)
@@ -182,7 +187,7 @@ class Ex(QWidget, Ui_Form):
                 c = pt['color'].lstrip('#')
                 color = tuple(int(c[i:i+2], 16) for i in (0, 2 ,4))
                 color = (color[2],color[1],color[0])
-                cv2.line(stroke,pt['prev'],pt['curr'],color,4)
+                cv2.line(stroke,pt['prev'],pt['curr'],color,pt['width'])
             stroke = stroke/127.5 - 1
             stroke = np.expand_dims(stroke,axis=0)
         else:
