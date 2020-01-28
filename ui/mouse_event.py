@@ -25,6 +25,8 @@ class GraphicsScene(QGraphicsScene):
 
         self.updateCounts = []
 
+        self.itemList = []
+
         # save the history of edit
         self.history = []
 
@@ -48,11 +50,13 @@ class GraphicsScene(QGraphicsScene):
     def mousePressEvent(self, event):
         self.mouse_clicked = True
         self.updateCount = 0
+        print("mouse down")
 
     def mouseReleaseEvent(self, event):
         self.prev_pt = None
         self.mouse_clicked = False
         self.updateCounts.append(self.updateCount)
+        print("mouse up")
         self.updateCount = 0
 
     def mouseMoveEvent(self, event):
@@ -102,6 +106,7 @@ class GraphicsScene(QGraphicsScene):
         lineItem.setPen(QPen(Qt.white, self.maskSizeSlider.value(), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)) # rect
         lineItem.setZValue(2)
         self.addItem(lineItem)
+        self.itemList.append(lineItem)
 
     def drawSketch(self, prev_pt, curr_pt):
         lineItem = QGraphicsLineItem(QLineF(prev_pt, curr_pt))
@@ -109,12 +114,14 @@ class GraphicsScene(QGraphicsScene):
         #lineItem.setPen(QPen(Qt.black, 1, Qt.SolidLine)) # rect
         lineItem.setZValue(4)
         self.addItem(lineItem)
+        self.itemList.append(lineItem)
 
     def drawStroke(self, prev_pt, curr_pt):
         lineItem = QGraphicsLineItem(QLineF(prev_pt, curr_pt))
         lineItem.setPen(QPen(QColor(self.stk_color), self.paintSizeSlider.value(), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)) # rect
         lineItem.setZValue(3)
         self.addItem(lineItem)
+        self.itemList.append(lineItem)
 
     def get_stk_color(self, color):
         self.stk_color = color
@@ -126,42 +133,27 @@ class GraphicsScene(QGraphicsScene):
         for i in range(len(self.items())):
             item = self.items()[0]
             self.removeItem(item)
+            self.itemList = []
         
     def undo(self):
         if len(self.items())>1:
-            if len(self.items())>=self.updateCounts[len(self.updateCounts)-1]:
-                for i in range(self.updateCounts[len(self.updateCounts)-1]-1):
-                    item = self.items()[0]
-                    self.removeItem(item)
-                    if self.history[-1] == 0:
-                        self.mask_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 1:
-                        self.sketch_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 2:
-                        self.stroke_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 3:
-                        self.history.pop()
-            else:
-                for i in range(len(self.items())-1):
-                    item = self.items()[0]
-                    self.removeItem(item)
-                    if self.history[-1] == 0:
-                        self.mask_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 1:
-                        self.sketch_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 2:
-                        self.stroke_points.pop()
-                        self.history.pop()
-                    elif self.history[-1] == 3:
-                        self.history.pop()
-        self.updateCount = 0
+            for i in range(self.updateCounts[len(self.updateCounts)-1]-1):
+                item = self.itemList.pop()
+                self.removeItem(item)
+                if self.history[-1] == 0:
+                    self.mask_points.pop()
+                    self.history.pop()
+                elif self.history[-1] == 1:
+                    self.sketch_points.pop()
+                    self.history.pop()
+                elif self.history[-1] == 2:
+                    self.stroke_points.pop()
+                    self.history.pop()
+                elif self.history[-1] == 3:
+                    self.history.pop()
+            if len(self.updateCounts) > 0:
+                self.updateCounts.pop()
 
-        if len(self.updateCounts) > 0:
-            self.updateCounts.pop()
+        self.updateCount = 0
 
         self.update()

@@ -34,14 +34,14 @@ class Ex(QMainWindow, Ui_MainWindow):
         self.scene = GraphicsScene(self.modes, self.maskSizeSlider, self.sketchSizeSlider, self.paintSizeSlider)
         self.graphicsView.setScene(self.scene)
         self.graphicsView.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        #self.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        #self.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphicsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphicsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.result_scene = QGraphicsScene()
         self.graphicsView_2.setScene(self.result_scene)
         self.graphicsView_2.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        #self.graphicsView_2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        #self.graphicsView_2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphicsView_2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphicsView_2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.dlg = QColorDialog(self.graphicsView)
         self.color = None
@@ -66,7 +66,7 @@ class Ex(QMainWindow, Ui_MainWindow):
             # blackpen = QPen(Qt.black)
             # blackpen.setWidth(5)
             self.image = image
-            #self.image = image.scaled(self.graphicsView.size(), Qt.IgnoreAspectRatio)
+            self.image = image.scaled(self.graphicsView.size(), Qt.IgnoreAspectRatio)
             mat_img = cv2.resize(mat_img, (512, 512), interpolation=cv2.INTER_CUBIC)
             mat_img = mat_img/127.5 - 1
             self.mat_img = np.expand_dims(mat_img,axis=0)
